@@ -5,10 +5,12 @@ import "react-toastify/dist/ReactToastify.css";
 import getProcesses from "../api/getProcesses";
 import postProcess from "../api/postProcess";
 import postSubprocess from "../api/postSubprocess";
+import { createNode } from "../nodes/createNode";
 import { Process } from "../types/Process";
 import { createOptions } from "../utils/formOptions";
+import { modalStyle } from "./modalStyle";
 
-export default function FormModal({handleCloseModal}): JSX.Element {
+export default function FormModal({handleCloseModal, setNodes, nodes}): JSX.Element {
   const [type, setType] = useState("");
   const [name, setName] = useState("");
   const [processesList, setProcessesList] = useState<Process[]>([]);
@@ -30,7 +32,13 @@ export default function FormModal({handleCloseModal}): JSX.Element {
   const handleSubmit = useCallback(async() => {
     try {
       if(type === "Processo" && !!name) {
-        await postProcess(name);
+        const response = await postProcess(name);
+        const newNode = createNode(response, "process");
+        if(nodes?.length > 0) {
+          setNodes(nodes => [...nodes, newNode]);
+        } else {
+          setNodes([newNode]);
+        }
         toast.success("Processo cadastrado");
         handleCloseModal();
       } else if(type === "Subprocesso" && typeof processId === "number" && !!name) {
@@ -87,17 +95,3 @@ export default function FormModal({handleCloseModal}): JSX.Element {
   );
 }
 
-const modalStyle = {
-  position: "absolute" as const,
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: 400,
-  bgcolor: "background.paper",
-  border: "2px solid #000",
-  boxShadow: 24,
-  p: 4,
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "space-beetwen",
-};

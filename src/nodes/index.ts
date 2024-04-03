@@ -1,6 +1,7 @@
 import type { Node } from "reactflow";
 import getProcesses from "../api/getProcesses";
 import { Process } from "../types/Process";
+import { createNode } from "./createNode";
 
 async function buildInitialNodes() {
   const data = await getProcesses();
@@ -8,7 +9,7 @@ async function buildInitialNodes() {
 
   if(!!data && data.length > 0) {
     nodesList = data.map((process: Process) => {
-      return { id: process.id.toString(), position: { x: process.id * 800, y: 0 }, data: { label: process.name } };
+      return createNode(process, "process");
     });
 
   }
