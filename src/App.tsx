@@ -1,6 +1,6 @@
 import type { OnConnect } from "reactflow";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Background,
   Controls,
@@ -14,37 +14,38 @@ import {
 
 import "reactflow/dist/style.css";
 
+import { Modal } from "@mui/material";
 import { PlusCircle } from "phosphor-react";
+import { ToastContainer } from "react-toastify";
 import type { Node } from "reactflow";
 import getSubprocessByProcess from "./api/getSubprocessesByProcess";
+import FormModal from "./components/FormModal";
 import { edgeTypes, initialEdges } from "./edges";
 import { initialNodes } from "./nodes";
 import { Subprocess } from "./types/Subprocess";
 
 export default function App(): JSX.Element {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, setNodes, ] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [isModalOpen, setisModalOpen] = useState(false);
   const onConnect: OnConnect = useCallback(
     (connection) => setEdges((edges) => addEdge(connection, edges)),
     [setEdges]
   );
 
-  const handleProcessClick = useCallback(async(event: any, node: Node) => {
+  useEffect(() => {
+    setNodes(initialNodes);
+  }, []);
+
+  const handleProcessClick = useCallback(async(_event: unknown, node: Node) => {
     const subprocesses = await getSubprocessByProcess(node.id);
-    // const positionsX = subprocesses.map((subprocess: Subprocess, index: number) => {
-    //   const totalX = (150 * subprocesses.length) + (50 * (subprocesses.length - 1));
-    //   const gap = totalX / (subprocesses.length - 1);
-    //   return 
-    // }
+
     const subprocessNodes = subprocesses.map((subprocess: Subprocess, index: number) => {
       const id = `${node.id}-${subprocess.id}`;
 
-      const offsetX = 150; // Largura do elemento
-      const spacing = 50; // Espaçamento entre os elementos
-      const totalWidth = subprocesses.length * offsetX + (subprocesses.length - 1) * spacing;
-      const startX = -(totalWidth - offsetX) / 2;
-      const positionX = startX + index * (offsetX + spacing);
-      console.log(positionX);
+
+      const positionX = calculatePositionX(subprocesses, index);
+
       return {
         id,
         data: { label: subprocess.name },
@@ -60,26 +61,53 @@ export default function App(): JSX.Element {
 
     setNodes([...nodes, ...subprocessNodes]);
     setEdges([...edges, ...newEdges]);
+  }, [nodes, edges, setEdges, setNodes]);
+
+  const calculatePositionX = useCallback((subprocesses: Subprocess[], index: number) => {
+    const offsetX = 150;
+    const spacing = 50;
+    const totalWidth = subprocesses.length * offsetX + (subprocesses.length - 1) * spacing;
+    const startX = -(totalWidth - offsetX) / 2;
+
+    return startX + index * (offsetX + spacing);
+  }, []); 
+
+  const handleOpenModal = useCallback(() => {
+    setisModalOpen(true);
   }, []);
 
-  // const calculatePositionX = useCallback(node: Node, subprocessNodes)
+  const handleCloseModal = useCallback(() => {
+    setisModalOpen(false);
+  }, []);
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      edgeTypes={edgeTypes}
-      onEdgesChange={onEdgesChange}
-      onConnect={onConnect}
-      onNodeClick={handleProcessClick}
-      fitView
-    >
-      <Panel position="top-left">
-        <PlusCircle size={32} cursor={"pointer"} />
-      </Panel>
-      <Background />
-      <MiniMap />
-      <Controls />
-    </ReactFlow>
+    <>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        edgeTypes={edgeTypes}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onNodeClick={handleProcessClick}
+        fitView
+      >
+        <Panel position="top-left">
+          <PlusCircle size={32} cursor={"pointer"} onClick={handleOpenModal}/>
+        </Panel>
+        <Background />
+        <MiniMap />
+        <Controls />
+      </ReactFlow>
+      <Modal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <FormModal handleCloseModal={handleCloseModal} setNodes={setNodes}></FormModal>
+      </Modal>
+      <ToastContainer />
+    </>
+
   );
 }

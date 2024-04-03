@@ -23,5 +23,7 @@ module.exports = {
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/explicit-function-return-type": ["warn", { "allowExpressions": true }],
     "comma-spacing": ["error", { "before": false, "after": true }],
+    "indent": "off",
+    "@typescript-eslint/indent": ["error", 2],
   },
 }
